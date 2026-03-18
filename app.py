@@ -26,10 +26,10 @@ TEXCONV_EXE = os.path.join(BASE_DIR, "bin", "DirectXTex", "texconv.exe")
 ARCHIVEFIX_EXE = os.path.join(BASE_DIR, "bin", "ArchiveFix", "ArchiveFix.exe")
 
 
-class MiamiHelper(QMainWindow):
+class GtaVHelper(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Miami Helper - Batch Texture Tool")
+        self.setWindowTitle("GTA V Helper - Batch Texture Tool")
         self.setMinimumWidth(500)
 
         central_widget = QWidget()
@@ -141,6 +141,6 @@ class MiamiHelper(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = MiamiHelper()
+    window = GtaVHelper()
     window.show()
     sys.exit(app.exec())

@@ -1,0 +1,40 @@
+name: Build Windows Executable
+
+on:
+  push:
+    branches: [ "main" ] # Triggers whenever you push to main
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:      # Allows you to run it manually from the UI
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip' # Speeds up subsequent builds
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Build with PyInstaller
+      run: |
+        # Note the use of ";" for Windows data paths
+        pyinstaller --onefile --windowed --add-data "bin;bin" --name "MiamiHelper" main.py
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: GTAVHelper-Windows-Build
+        path: dist/GTAVHelper.exe
+        retention-days: 5
