@@ -1,13 +1,3 @@
-<<<<<<< HEAD
-name: Build Windows Executable
-
-on:
-  push:
-    branches: [ "main" ] # Triggers whenever you push to main
-  pull_request:
-    branches: [ "main" ]
-  workflow_dispatch:      # Allows you to run it manually from the UI
-=======
 name: Build Windows Executable (PySide2)
 
 on:
@@ -17,41 +7,12 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
->>>>>>> 3e2cba6 (fixed)
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-<<<<<<< HEAD
-    - name: Checkout Code
-      uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-        cache: 'pip' # Speeds up subsequent builds
-
-    - name: Install Dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pyinstaller
-
-    - name: Build with PyInstaller
-      run: |
-        # Note the use of ";" for Windows data paths
-        pyinstaller --onefile --windowed --add-data "bin;bin" --name "MiamiHelper" main.py
-
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: GTAVHelper-Windows-Build
-        path: dist/GTAVHelper.exe
-        retention-days: 5
-=======
       - name: Checkout Code
         uses: actions/checkout@v4
 
@@ -60,19 +21,81 @@ jobs:
         with:
           python-version: "3.8.10"
 
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\pip\Cache
+          key: ${{ runner.os }}-pip-py3.8-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py3.8-
+
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install PySide2 pyinstaller
+          pip install PySide2==5.15.2.1 pyinstaller==5.13.2
+
+      - name: Verify Tools Exist
+        shell: pwsh
+        run: |
+          if (-Not (Test-Path "bin\DirectXTex\texconv.exe")) {
+            Write-Error "Missing: bin\DirectXTex\texconv.exe"
+            exit 1
+          }
+          if (-Not (Test-Path "bin\ArchiveFix\ArchiveFix.exe")) {
+            Write-Error "Missing: bin\ArchiveFix\ArchiveFix.exe"
+            exit 1
+          }
+          Write-Host "All required binaries found." -ForegroundColor Green
+
+      - name: Collect PySide2 Qt platform plugins path
+        id: pyside2_path
+        shell: pwsh
+        run: |
+          $site = python -c "import site; print(site.getsitepackages()[0])"
+          $plugins = Join-Path $site "PySide2\plugins"
+          echo "plugins_path=$plugins" >> $env:GITHUB_OUTPUT
+          Write-Host "PySide2 plugins: $plugins"
 
       - name: Build with PyInstaller
+        shell: pwsh
         run: |
-          # Ensure the filename below matches your script name (app.py)
-          pyinstaller --onefile --windowed --add-data "bin;bin" --name "MiamiHelper" app.py
+          $pluginsPath = "${{ steps.pyside2_path.outputs.plugins_path }}"
+
+          pyinstaller `
+            --onefile `
+            --windowed `
+            --name "GtaVHelper" `
+            --add-data "bin;bin" `
+            --add-data "${pluginsPath}\platforms;PySide2\plugins\platforms" `
+            --add-data "${pluginsPath}\styles;PySide2\plugins\styles" `
+            --hidden-import PySide2.QtCore `
+            --hidden-import PySide2.QtGui `
+            --hidden-import PySide2.QtWidgets `
+            --hidden-import shiboken2 `
+            --collect-all PySide2 `
+            app.py
+
+      - name: Verify Build Output
+        shell: pwsh
+        run: |
+          if (-Not (Test-Path "dist\GtaVHelper.exe")) {
+            Write-Error "Build failed — GtaVHelper.exe not found in dist\"
+            exit 1
+          }
+          $size = (Get-Item "dist\GtaVHelper.exe").length / 1MB
+          Write-Host ("Build OK — Size: {0:N1} MB" -f $size) -ForegroundColor Green
+
+      - name: Get short SHA
+        id: sha
+        shell: pwsh
+        run: |
+          $short = "${{ github.sha }}".Substring(0, 7)
+          echo "short_sha=$short" >> $env:GITHUB_OUTPUT
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GtaVHelper-Legacy-Build
+          name: GtaVHelper-win64-${{ steps.sha.outputs.short_sha }}
           path: dist/GtaVHelper.exe
->>>>>>> 3e2cba6 (fixed)
+          retention-days: 30
+          if-no-files-found: error
