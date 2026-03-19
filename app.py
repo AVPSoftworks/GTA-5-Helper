@@ -29,13 +29,6 @@ TEXCONV_EXE = os.path.join(BASE_DIR, "bin", "DirectXTex", "texconv.exe")
 ARCHIVEFIX_EXE = os.path.join(BASE_DIR, "bin", "ArchiveFix", "ArchiveFix.exe")
 
 
-<<<<<<< HEAD
-class GtaVHelper(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("GTA V Helper - Batch Texture Tool")
-        self.setMinimumWidth(500)
-=======
 # ─────────────────────────────────────────────
 #  Background worker thread for batch convert
 # ─────────────────────────────────────────────
@@ -235,12 +228,11 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
 class GtaVHelper(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Gta V Helper")
+        self.setWindowTitle("GTA V Helper  ·  DDS Converter + RPF Fix")
         self.setMinimumWidth(560)
         self.setMinimumHeight(500)
         self.worker = None
         self.output_dir = ""
->>>>>>> 3e2cba6 (fixed)
 
         self.setStyleSheet(STYLESHEET)
         self._build_ui()
