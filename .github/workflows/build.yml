@@ -25,7 +25,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~\AppData\Local\pip\Cache
-          key: ${{ runner.os }}-pip-py3.8-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-pip-py3.8-pyside2-5.15.2.1
           restore-keys: |
             ${{ runner.os }}-pip-py3.8-
 
@@ -34,7 +34,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install PySide2==5.15.2.1 pyinstaller==5.13.2
 
-      - name: Verify Tools Exist
+      - name: Verify bundled tools exist
         shell: pwsh
         run: |
           if (-Not (Test-Path "bin\DirectXTex\texconv.exe")) {
@@ -47,42 +47,58 @@ jobs:
           }
           Write-Host "All required binaries found." -ForegroundColor Green
 
-      - name: Collect PySide2 Qt platform plugins path
-        id: pyside2_path
-        shell: pwsh
-        run: |
-          $pyside2_dir = python -c "import PySide2; import os; print(os.path.dirname(PySide2.__file__))"
-          $plugins_dir = Join-Path $pyside2_dir "plugins"
-          echo "plugins_path=$plugins" >> $env:GITHUB_OUTPUT
-          Write-Host "PySide2 plugins: $plugins"
-
       - name: Build with PyInstaller
         shell: pwsh
         run: |
-          $pluginsPath = "${{ steps.pyside2_path.outputs.plugins_path }}"
+          # Resolve PySide2 location directly inside the build step — no inter-step output needed
+          $pyside2Dir = python -c "import PySide2, os; print(os.path.dirname(PySide2.__file__))"
+          Write-Host "PySide2 dir: $pyside2Dir"
 
-          pyinstaller `
-            --onefile `
-            --windowed `
-            --name "GtaVHelper" `
-            --add-data "bin;bin" `
-            --add-data "${pluginsPath}\platforms;PySide2\plugins\platforms" `
-            --add-data "${pluginsPath}\styles;PySide2\plugins\styles" `
-            --hidden-import PySide2.QtCore `
-            --hidden-import PySide2.QtGui `
-            --hidden-import PySide2.QtWidgets `
-            --hidden-import shiboken2 `
-            --collect-all PySide2 `
-            app.py
+          $platforms = Join-Path $pyside2Dir "plugins\platforms"
+          $styles    = Join-Path $pyside2Dir "plugins\styles"
 
-      - name: Verify Build Output
+          Write-Host "platforms : $platforms  exists=$((Test-Path $platforms))"
+          Write-Host "styles    : $styles  exists=$((Test-Path $styles))"
+
+          $pyArgs = @(
+            "--onefile",
+            "--windowed",
+            "--name", "MiamiHelper",
+            "--add-data", "bin;bin",
+            "--hidden-import", "PySide2.QtCore",
+            "--hidden-import", "PySide2.QtGui",
+            "--hidden-import", "PySide2.QtWidgets",
+            "--hidden-import", "shiboken2",
+            "--collect-all", "PySide2"
+          )
+
+          if (Test-Path $platforms) {
+            $pyArgs += "--add-data"
+            $pyArgs += "$platforms;PySide2\plugins\platforms"
+          } else {
+            Write-Warning "platforms plugin folder not found — skipping"
+          }
+
+          if (Test-Path $styles) {
+            $pyArgs += "--add-data"
+            $pyArgs += "$styles;PySide2\plugins\styles"
+          } else {
+            Write-Warning "styles plugin folder not found — skipping"
+          }
+
+          $pyArgs += "app.py"
+
+          Write-Host "Command: pyinstaller $($pyArgs -join ' ')"
+          pyinstaller @pyArgs
+
+      - name: Verify build output
         shell: pwsh
         run: |
-          if (-Not (Test-Path "dist\GtaVHelper.exe")) {
-            Write-Error "Build failed — GtaVHelper.exe not found in dist\"
+          if (-Not (Test-Path "dist\MiamiHelper.exe")) {
+            Write-Error "Build failed — MiamiHelper.exe not found in dist\"
             exit 1
           }
-          $size = (Get-Item "dist\GtaVHelper.exe").length / 1MB
+          $size = (Get-Item "dist\MiamiHelper.exe").length / 1MB
           Write-Host ("Build OK — Size: {0:N1} MB" -f $size) -ForegroundColor Green
 
       - name: Get short SHA
@@ -95,7 +111,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GtaVHelper-win64-${{ steps.sha.outputs.short_sha }}
-          path: dist/GtaVHelper.exe
+          name: MiamiHelper-win64-${{ steps.sha.outputs.short_sha }}
+          path: dist/MiamiHelper.exe
           retention-days: 30
           if-no-files-found: error
