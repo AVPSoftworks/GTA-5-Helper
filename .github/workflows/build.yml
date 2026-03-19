@@ -63,7 +63,7 @@ jobs:
           $pyArgs = @(
             "--onefile",
             "--windowed",
-            "--name", "MiamiHelper",
+            "--name", "GtaVHelper",
             "--add-data", "bin;bin",
             "--hidden-import", "PySide2.QtCore",
             "--hidden-import", "PySide2.QtGui",
@@ -94,11 +94,11 @@ jobs:
       - name: Verify build output
         shell: pwsh
         run: |
-          if (-Not (Test-Path "dist\MiamiHelper.exe")) {
-            Write-Error "Build failed — MiamiHelper.exe not found in dist\"
+          if (-Not (Test-Path "dist\GtaVHelper.exe")) {
+            Write-Error "Build failed — GtaVHelper.exe not found in dist\"
             exit 1
           }
-          $size = (Get-Item "dist\MiamiHelper.exe").length / 1MB
+          $size = (Get-Item "dist\GtaVHelper.exe").length / 1MB
           Write-Host ("Build OK — Size: {0:N1} MB" -f $size) -ForegroundColor Green
 
       - name: Get short SHA
@@ -111,7 +111,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MiamiHelper-win64-${{ steps.sha.outputs.short_sha }}
-          path: dist/MiamiHelper.exe
+          name: GtaVHelper-win64-${{ steps.sha.outputs.short_sha }}
+          path: dist/GtaVHelper.exe
           retention-days: 30
           if-no-files-found: error
