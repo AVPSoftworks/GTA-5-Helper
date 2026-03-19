@@ -51,8 +51,8 @@ jobs:
         id: pyside2_path
         shell: pwsh
         run: |
-          $site = python -c "import site; print(site.getsitepackages()[0])"
-          $plugins = Join-Path $site "PySide2\plugins"
+          $pyside2_dir = python -c "import PySide2; import os; print(os.path.dirname(PySide2.__file__))"
+          $plugins_dir = Join-Path $pyside2_dir "plugins"
           echo "plugins_path=$plugins" >> $env:GITHUB_OUTPUT
           Write-Host "PySide2 plugins: $plugins"
 
