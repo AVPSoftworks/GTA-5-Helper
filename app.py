@@ -3,7 +3,7 @@ import subprocess
 import sys
 
 from PySide2.QtCore import Qt, QThread, Signal
-from PySide2.QtGui import QColor, QFont, QPalette
+from PySide2.QtGui import QColor, QFont, QIcon, QPalette, QPixmap
 from PySide2.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -56,8 +56,8 @@ class ConvertWorker(QThread):
                 "-f",
                 self.fmt,
                 "-m",
-                "0" if self.gen_mipmaps else "1",  # 0 = full mip chain, 1 = no mips
-                "-y",  # overwrite
+                "0" if self.gen_mipmaps else "1",
+                "-y",
                 "-o",
                 out_dir,
                 file_path,
@@ -65,11 +65,11 @@ class ConvertWorker(QThread):
 
             ok = False
             try:
-                result = subprocess.run(
+                subprocess.run(
                     cmd,
                     check=True,
                     capture_output=True,
-                    creationflags=0x08000000,  # CREATE_NO_WINDOW
+                    creationflags=0x08000000,
                 )
                 ok = True
                 success += 1
@@ -229,12 +229,19 @@ class GtaVHelper(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("GTA V Helper  ·  DDS Converter + RPF Fix")
-        self.setMinimumWidth(560)
-        self.setMinimumHeight(500)
         self.worker = None
         self.output_dir = ""
-
         self.setStyleSheet(STYLESHEET)
+
+        # --- Set icon safely ---
+        icon_path = os.path.join(BASE_DIR, "icon.ico")
+        if os.path.exists(icon_path):
+            pixmap = QPixmap(icon_path)
+            self.setWindowIcon(QIcon(pixmap))
+            print(f"[INFO] Loaded icon: {icon_path}")
+        else:
+            print(f"[WARNING] icon.ico not found at: {icon_path}")
+
         self._build_ui()
 
     # ── UI Construction ────────────────────────────────────────────────────
@@ -255,7 +262,7 @@ class GtaVHelper(QMainWindow):
         sub.setStyleSheet(f"color: {SUBTEXT}; font-size: 11px; margin-bottom: 6px;")
         main.addWidget(sub)
 
-        # ── Queue ──
+        # Queue
         queue_group = QGroupBox("Conversion Queue")
         ql = QVBoxLayout()
         self.file_list = QListWidget()
@@ -277,7 +284,7 @@ class GtaVHelper(QMainWindow):
         queue_group.setLayout(ql)
         main.addWidget(queue_group)
 
-        # ── DDS Settings ──
+        # DDS Settings
         settings_group = QGroupBox("DDS Settings")
         sl = QVBoxLayout()
 
@@ -285,16 +292,9 @@ class GtaVHelper(QMainWindow):
         row1.addWidget(QLabel("Compression:"))
         self.combo_compression = QComboBox()
         self.combo_compression.addItems(
-            [
-                "DXT1",  # RGB, 1-bit alpha  — smallest
-                "DXT3",  # RGBA, sharp alpha
-                "DXT5",  # RGBA, smooth alpha — most common
-                "BC4_UNORM",  # single channel (greyscale / roughness)
-                "BC5_UNORM",  # dual channel (normal maps)
-                "BC7_UNORM",  # high-quality RGBA
-            ]
+            ["DXT1", "DXT3", "DXT5", "BC4_UNORM", "BC5_UNORM", "BC7_UNORM"]
         )
-        self.combo_compression.setCurrentIndex(2)  # DXT5 default
+        self.combo_compression.setCurrentIndex(2)
         row1.addWidget(self.combo_compression)
         row1.addStretch()
         self.check_mipmaps = QCheckBox("Generate Mipmaps")
@@ -320,7 +320,7 @@ class GtaVHelper(QMainWindow):
         settings_group.setLayout(sl)
         main.addWidget(settings_group)
 
-        # ── Progress ──
+        # Progress
         self.progress_bar = QProgressBar()
         self.progress_bar.setValue(0)
         self.progress_bar.setVisible(False)
@@ -331,7 +331,7 @@ class GtaVHelper(QMainWindow):
         self.status_label.setVisible(False)
         main.addWidget(self.status_label)
 
-        # ── Actions ──
+        # Actions
         self.btn_convert = QPushButton("▶   CONVERT BATCH  →  DDS")
         self.btn_convert.setStyleSheet(
             f"background-color: {GREEN}; color: #111; font-weight: bold;"
@@ -474,4 +474,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = GtaVHelper()
     window.show()
-    sys.exit(app.exec_())  # PySide2 uses exec_() with underscore
+    sys.exit(app.exec_())
